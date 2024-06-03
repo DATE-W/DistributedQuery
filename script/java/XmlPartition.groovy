@@ -53,8 +53,8 @@ def createEventReader() {
 def createNextEventWriter() {
     println "Writing to '${filename = String.format(output, ++fileNumber)}'"
     writer = XMLOutputFactory.newInstance().createXMLEventWriter(new FileOutputStream(filename), start.characterEncodingScheme)
-    writer.add(start)
-    writer.add(root)
+    writer.add(start)  // 添加文档起始事件
+    writer.add(root)   // 添加根元素
     return writer
 }
 
@@ -87,16 +87,18 @@ writer.add(firstChild)
 
 // 遍历XML事件
 reader.each {
+    // 检查是否是目标元素
     if (it.startElement && (it.name == firstChild.name || it.name.localPart in ["inproceedings", "proceedings", "book", "incollection", "phdthesis", "mastersthesis", "www"])) {
+        // 如果超过块大小，创建新的写入器
         if (++elementCount > chunkSize) {
-            writer.add(eventFactory.createEndDocument())
+            writer.add(eventFactory.createEndDocument())  // 结束当前文档
             writer.flush()
-            writer = createNextEventWriter()
-            writer.add(firstChild)
-            elementCount = 0
+            writer = createNextEventWriter()  // 创建新文档
+            writer.add(firstChild)  // 添加第一个子元素
+            elementCount = 0  // 重置元素计数
         }
     }
-    writer.add(it)
+    writer.add(it)  // 添加当前事件到文档中
 }
 
 // 结束并刷新写入器
