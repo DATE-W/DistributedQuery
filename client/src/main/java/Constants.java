@@ -7,6 +7,6 @@ public interface Constants {
     int REPLICAS = 3;
     int BLOCK_NUM = 6;
     int SERVER_NUM = 6;
-    int TIME_OUT = 1000;
+    int TIME_OUT = 10000;
     int START_PORT=1100;
 }

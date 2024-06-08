@@ -1,6 +1,8 @@
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 
+import java.io.*;
+import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -107,7 +109,70 @@ public class FileBlockDistributor {
         return replicas;
     }
 
-    public String getServer(String block_key){
+    public String getServer(String block_key) {
         return this.consistentHash.getServer(block_key);
+    }
+
+    private boolean store(String server, String fileBlock) {
+        try {
+            Socket socket = new Socket();
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            String fileName = fileBlock;
+            // 发请求
+            writer.write("put block\n");
+            writer.flush();
+            // 响应
+            String msg = reader.readLine();
+            if (!msg.equals("request_ok")) {
+                System.out.println("块上传请求未被正确响应，传输终止");
+                return false;
+            }
+            // 发送文件名
+            writer.write(fileName+'\n');
+            writer.flush();
+            // 等待响应
+            msg = reader.readLine();
+            if(!msg.equals("name_ok")){
+                System.out.println("块文件名未被正确响应，传输中止");
+                return false;
+            }
+
+            // 从文件中读取
+            int blockSize =1024*1024*768;
+            String filePath = "/home/ubuntu/Distribution/XmlBlocks/";
+            byte[] block;   // 缓冲区
+            try {
+                // 读取本地文件
+                BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(filePath + "\\" + fileName));
+                block = new byte[blockSize];
+                int len = -1;
+                while ((len = bufferedInputStream.read(block))!=-1) {
+                }
+            } catch (FileNotFoundException e) {
+                System.out.println("找不到指定文件，请检查文件路径及文件名称");
+                return false;
+            } catch (IOException e) {
+                System.out.println("本地文件读取失败！");
+                return false;
+            }
+
+            // 准备文件传输
+            BufferedOutputStream bufferedOutputStream = new BufferedOutputStream((socket.getOutputStream()));
+            bufferedOutputStream.write(block);
+            bufferedOutputStream.flush();
+
+            msg = reader.readLine();
+            if(!msg.equals("block_ok")){
+                System.out.println("块文件上传失败，传输中止");
+                return false;
+            }
+        } catch (IOException e) {
+            //throw new RuntimeException(e);
+            System.out.println(e);
+            System.out.println("上传文件块时创建IO流失败");
+            return false;
+        }
+        return true;
     }
 }
